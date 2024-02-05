@@ -27,9 +27,14 @@ typedef struct {
     uint16_t metadata_offset;
 } metadata_header;
 
-int main() {
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        printf("ERROR: No filename inputted\n");
+        return -1;
+    }
+
     // Open file pointer for metadata and data
-    FILE * fp = fopen("trevtesttest", "r");
+    FILE * fp = fopen(argv[1], "r");
 
     // Get metadata header
     metadata_header header;

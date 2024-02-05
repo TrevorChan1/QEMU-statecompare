@@ -31,8 +31,8 @@ typedef struct {
 
 int main() {
     // Open file pointer for metadata and data
-    FILE * metadata_fp = fopen("trevtesttest", "w");
-    FILE * data_fp = fopen("trevtesttest", "w");
+    FILE * metadata_fp = fopen("trevtesttest2", "w");
+    FILE * data_fp = fopen("trevtesttest2", "w");
 
     // Initialize metadata header values
     metadata_header test_header;
@@ -74,7 +74,7 @@ int main() {
     test2.offset = data_offset;
     test2.datatype = TYPE_UINT32;
     
-    uint32_t data2[3] = {(uint32_t) 1, (uint32_t) 3, (uint32_t) 4};
+    uint32_t data2[3] = {(uint32_t) 1, (uint32_t) 2, (uint32_t) 4};
     // Write metadata entry to metadata
     fwrite(&test2, sizeof(metadata_field), 1, metadata_fp);
 
