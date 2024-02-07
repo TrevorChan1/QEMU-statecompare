@@ -18,7 +18,6 @@ typedef struct {
     uint32_t offset;
     uint32_t num_elements;
     uint32_t element_size;
-    enum state_type datatype;
 
 } metadata_field;
 
@@ -33,6 +32,8 @@ int main() {
     // Open file pointer for metadata and data
     FILE * metadata_fp = fopen("trevtesttest2", "w");
     FILE * data_fp = fopen("trevtesttest2", "w");
+
+
 
     // Initialize metadata header values
     metadata_header test_header;
@@ -52,16 +53,15 @@ int main() {
     test.num_elements = 10;
     test.element_size = sizeof(char);
     test.offset = data_offset;
-    test.datatype = TYPE_CHAR;
     
-    char * data = (char*) "test_data";
+    void * data = (char*) "test_data";
     // Write metadata entry to metadata
     fwrite(&test, sizeof(metadata_field), 1, metadata_fp);
 
     // Write data to data
     fwrite(data, test.element_size, test.num_elements, data_fp);
     data_offset += test.size * sizeof(char);
-    fseek(data_fp, data_offset, SEEK_SET);
+    // fseek(data_fp, data_offset, SEEK_SET);
 
 
     // Initialize 2nd metadata entry value
@@ -72,14 +72,14 @@ int main() {
     test2.num_elements = 3;
     test2.element_size = sizeof(uint32_t);
     test2.offset = data_offset;
-    test2.datatype = TYPE_UINT32;
     
     uint32_t data2[3] = {(uint32_t) 1, (uint32_t) 2, (uint32_t) 4};
+    void * data3 = data2;
     // Write metadata entry to metadata
     fwrite(&test2, sizeof(metadata_field), 1, metadata_fp);
 
     // Write data to data
-    fwrite(data2, test2.element_size, test2.num_elements, data_fp);
+    fwrite(data3, test2.element_size, test2.num_elements, data_fp);
 
     fclose(metadata_fp);
     fclose(data_fp);

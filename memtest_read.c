@@ -19,7 +19,6 @@ typedef struct {
     uint32_t offset;
     uint32_t num_elements;
     uint32_t element_size;
-    enum state_type datatype;
 } metadata_field;
 
 typedef struct {
