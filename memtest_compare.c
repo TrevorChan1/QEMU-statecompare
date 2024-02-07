@@ -62,6 +62,7 @@ int vmstate_compare(char* file1, char* file2) {
         if (md1[i].size != md2[i].size) {
             differences++;
             printf("%s Size differs\n", md1[i].name);
+            printf("%d %d\n", md1[i].size, md2[i].size);
         }
         else {
             // Allocate memory for both files' data
