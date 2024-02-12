@@ -4,14 +4,6 @@
 #include <string.h>
 # define MAX_NAME_LEN 16
 
-enum state_type {
-    TYPE_UINT8,
-    TYPE_UINT16,
-    TYPE_UINT32,
-    TYPE_UINT64,
-    TYPE_CHAR
-};
-
 typedef struct {
     char name[MAX_NAME_LEN];
     uint32_t size;
