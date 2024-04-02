@@ -9,6 +9,8 @@
 #include <string.h>
 #include <inttypes.h>
 # define MAX_NAME_LEN 16
+#define MAX_DEVICE_NAME 16
+#define MAX_NUM_DEVICE 32
 
 typedef struct {
     char name[MAX_NAME_LEN];
@@ -23,7 +25,7 @@ typedef struct {
     uint16_t metadata_offset;
 } metadata_header;
 
-int vmstate_compare(char * file1, char * file2, FILE * log_file);
+int vmstate_compare(char * device, char * file1, char * file2, FILE * log_file);
 
 void sigkill_handler(int);
 
@@ -31,7 +33,39 @@ void sigkill_handler(int);
 int sockfd;
 
 // Script that will interact with QEMU monitor
-int main() {
+int main(int argc, char* argv[]) {
+
+    // Grab input file information
+    if (argc <= 1) {
+        printf("ERROR: No File inputted\n");
+        return -1;
+    }
+
+    // Store all of the virtual device names
+    FILE * input_file = fopen(argv[1], "r");
+    char device[MAX_DEVICE_NAME];
+    char device_list_save[MAX_NUM_DEVICE][MAX_DEVICE_NAME];
+    char device_list_load[MAX_NUM_DEVICE][MAX_DEVICE_NAME];
+    char device_list[MAX_NUM_DEVICE][MAX_DEVICE_NAME];
+    int num_device = 0;
+    printf("Devices to be scanned:\n");
+    
+    while (fgets(device, MAX_DEVICE_NAME, input_file) != NULL && num_device < MAX_NUM_DEVICE) {
+
+        // Remove any trailing newline from device name
+        size_t len = strlen(device);
+        if (len > 0 && device[len - 1] == '\n') {
+            device[len - 1] = '\0';
+        }
+
+        snprintf(device_list_save[num_device], MAX_DEVICE_NAME+5, "save_%s", device);
+        snprintf(device_list_load[num_device], MAX_DEVICE_NAME+5, "load_%s", device);
+        strcpy(device_list[num_device++], device);
+
+        printf("\t%s\n", device);
+    }
+
+    // Initialize the kill signals to handle cleanup
     signal(SIGINT, sigkill_handler);
     signal(SIGKILL, sigkill_handler);
     struct sockaddr_un addr;
@@ -79,7 +113,7 @@ int main() {
 
     // Fuzzing loop
     int fuzz_count = 0;
-    while(fuzz_count++ < 5) {
+    while(++fuzz_count < 5) {
         printf("Running Load: Test %d\n", fuzz_count);
         // 1. Load VM (will collect info about loaded state)
         send(sockfd, load, strlen(load), 0);
@@ -88,27 +122,19 @@ int main() {
         read(sockfd, buffer, 1024);
         printf("%s\n", buffer);
 
-        fprintf(log_fd, "Test %d\n", fuzz_count);
-        // 2. Compare the saved vs. loaded states
-        if (vmstate_compare((char*)"save_e1000", (char *)"load_e1000", log_fd) < 0) {
-            perror("ERROR: Failed to compare state files\n");
-            exit(0);
+        fprintf(log_fd, "================Test %d================\n", fuzz_count);
+
+        // 2. Compare the saved vs. loaded states of each inputted file
+        for (int i = 0; i < num_device; i++) {
+            if (vmstate_compare(device_list[i], device_list_save[i], device_list_load[i], log_fd) < 0) {
+                perror("ERROR: Failed to compare state files\n");
+                exit(0);
+            }
+            fprintf(log_fd, "\n");
         }
-        fprintf(log_fd, "\n\n");
 
     }
-
-    // Example input
-    // const char *cmd2 = "help\n";
-    // send(sockfd, cmd2, strlen(cmd2), 0);
-    // printf("Command sent: %s", cmd2);
-
-    // // Receive and print the response
-    // sleep(2);
-    // read(sockfd, buffer, 1024);
-    // printf("%s\n", buffer);
-    // return 0;
-
+    fclose(log_fd);
 
     return 0;
 }
@@ -119,7 +145,7 @@ void sigkill_handler(int sig) {
     exit(0);
 }
 
-int vmstate_compare(char* file1, char* file2, FILE * log_file) {
+int vmstate_compare(char * device, char* file1, char* file2, FILE * log_file) {
 
     // Open file pointer for metadata and data
     FILE * fd1 = fopen(file1, "r");
@@ -130,6 +156,8 @@ int vmstate_compare(char* file1, char* file2, FILE * log_file) {
     metadata_header header2;
     fread(&header1, sizeof(metadata_header), 1, fd1);
     fread(&header2, sizeof(metadata_header), 1, fd2);
+
+    fprintf(log_file, "Device: %s\n", device);
 
     // Check that the number of fields is the same
     if (header1.num_fields != header2.num_fields) {
@@ -152,8 +180,7 @@ int vmstate_compare(char* file1, char* file2, FILE * log_file) {
         // Check if the data sizes match
         if (md1[i].size != md2[i].size) {
             differences++;
-            fprintf(log_file, "\t%s Size differs\n", md1[i].name);
-            fprintf(log_file, "\t\t%d %d\n", md1[i].size, md2[i].size);
+            fprintf(log_file, "\t%s Size differs: %d %d\n", md1[i].name, md1[i].size, md2[i].size);
         }
         else {
             // Allocate memory for both files' data
@@ -177,7 +204,7 @@ int vmstate_compare(char* file1, char* file2, FILE * log_file) {
     }
 
     fprintf(log_file, "Total # of Fields: %d\n", header1.num_fields);
-    fprintf(log_file, "# of Differences: %d\n", differences);
+    fprintf(log_file, "Total # of Differing FIelds: %d\n", differences);
 
     // Close the files
     fclose(fd1);
