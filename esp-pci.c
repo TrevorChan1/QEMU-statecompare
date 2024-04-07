@@ -367,10 +367,12 @@ static int am_pre_load(void*opaque) {
     init_rand();
 
     // Generate n random bytes in the place of each field value
-    // randomize_nbytes(&state->parent_obj, sizeof(PCIDeviceClass), 1);
-    randomize_nbytes(state->dma_regs, sizeof(uint32_t), 8);
-    randomize_nbytes(&state->esp.mig_version_id, sizeof(uint8_t), 1);
-    // randomize_nbytes(&state->esp, sizeof(ESPState), 1);
+    // randomize_nbytes(&state->parent_obj, sizeof(PCIDeviceClass), 1); // (BREAKS)
+    // randomize_nbytes(&state->io, (uint32_t) (state->io.size), 1); //Not in vmsd // (BREAKS)
+    randomize_nbytes(state->dma_regs, sizeof(uint8_t), 1);
+    randomize_nbytes(&state->sbac, sizeof(uint32_t), 1); //Not in vmsd
+    randomize_nbytes(&state->esp.mig_version_id, sizeof(uint8_t), 8);
+    // randomize_nbytes(&state->esp, sizeof(ESPState), 1); // (BREAKS)
 
     return 0;
 }

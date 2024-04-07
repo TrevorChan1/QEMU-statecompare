@@ -380,17 +380,20 @@ int passthru_post_load(void *opaque, int version_id);
 
 // Before loading the state, randomize all of the values saved to VMStateDescription
 static int passthru_pre_load(void*opaque) {
-    PassthruState * s = opaque;
+    PassthruState * state = opaque;
 
     // Initialize random seed
     init_rand();
 
     // Generate n random bytes in the place of each field value
-    randomize_nbytes(s->vscard_in_data, sizeof(uint8_t), VSCARD_IN_SIZE);
-    randomize_nbytes(&s->vscard_in_pos, sizeof(uint32_t), 1);
-    randomize_nbytes(&s->vscard_in_hdr, sizeof(uint32_t), 1);
-    randomize_nbytes(s->atr, sizeof(uint8_t), MAX_ATR_SIZE);
-    randomize_nbytes(&s->atr_length, sizeof(uint8_t), 1);
+    // randomize_nbytes(&state->base, sizeof(CCIDCardState), 1); //not in vmsd // (BREAKS)
+    // randomize_nbytes(&state->cs, sizeof(CharBackend), 1); //not in vmsd // (BREAKS)
+    randomize_nbytes(state->vscard_in_data, sizeof(uint8_t), VSCARD_IN_SIZE);
+    randomize_nbytes(&state->vscard_in_pos, sizeof(uint32_t), 1);
+    randomize_nbytes(&state->vscard_in_hdr, sizeof(uint32_t), 1);
+    randomize_nbytes(state->atr, sizeof(uint8_t), MAX_ATR_SIZE);
+    randomize_nbytes(&state->atr_length, sizeof(uint8_t), 1);
+    randomize_nbytes(&state->debug, sizeof(uint8_t), 1); //not in vmsd
 
     return 0;
 }

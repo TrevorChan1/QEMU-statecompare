@@ -1540,11 +1540,17 @@ static int e1000_post_load(void *opaque, int version_id)
 static int e1000_pre_load(void*opaque) {
     E1000State *s = opaque;
 
+    // FILE * fd = fopen("test_fuzz_output.txt", "w");
+
     // Initialize random seed
     init_rand();
 
     // Generate n random bytes in the place of each field value
-    // randomize_nbytes(&s->parent_obj, sizeof(PCIDeviceClass), 1);
+    // randomize_nbytes(&s->parent_obj, sizeof(PCIDeviceClass), 1); // (BREAKS)
+    // randomize_nbytes(s->nic, sizeof(NICState), 1); // Not in vmsd // (BREAKS)?
+    // randomize_nbytes(&s->conf, sizeof(NICConf), 1); // Not in vmsd // (BREAKS)?
+    // randomize_nbytes(&s->mmio, (uint32_t) (s->mmio.size), 1); // Not in vmsd // (BREAKS)
+    // randomize_nbytes(&s->io, (uint32_t) (s->io.size), 1); // Not in vmsd // (BREAKS)
     randomize_nbytes(&s->rxbuf_size, sizeof(uint32_t), 1);
     randomize_nbytes(&s->rxbuf_min_shift, sizeof(uint32_t), 1);
     randomize_nbytes(&s->eecd_state.val_in, sizeof(uint32_t), 1);
@@ -1569,6 +1575,9 @@ static int e1000_pre_load(void*opaque) {
     randomize_nbytes(&s->tx.tso_frames, sizeof(uint16_t), 1);
     randomize_nbytes(&s->tx.sum_needed, sizeof(unsigned char), 1);
     randomize_nbytes(s->tx.header, sizeof(unsigned char), 256);
+    randomize_nbytes(s->tx.vlan_header, sizeof(unsigned char), 4); // Not in vmsd
+    randomize_nbytes(s->tx.vlan, sizeof(unsigned char), 4); // Not in vmsd
+    randomize_nbytes(&s->tx.vlan_needed, sizeof(unsigned char), 1); // Not in vmsd
     randomize_nbytes(s->tx.data, sizeof(unsigned char), 0x10000);
     randomize_nbytes(&s->tx.tso_props.ipcss, sizeof(uint8_t), 1);
     randomize_nbytes(&s->tx.tso_props.ipcso, sizeof(uint8_t), 1);
@@ -1581,12 +1590,35 @@ static int e1000_pre_load(void*opaque) {
     randomize_nbytes(&s->tx.tso_props.mss, sizeof(uint16_t), 1);
     randomize_nbytes(&s->tx.tso_props.ip, sizeof(int8_t), 1);
     randomize_nbytes(&s->tx.tso_props.tcp, sizeof(int8_t), 1);
+    randomize_nbytes(&s->tx.props.ipcss, sizeof(uint8_t), 1); // Not in vmsd
+    randomize_nbytes(&s->tx.props.ipcso, sizeof(uint8_t), 1); // Not in vmsd
+    randomize_nbytes(&s->tx.props.ipcse, sizeof(uint16_t), 1); // Not in vmsd
+    randomize_nbytes(&s->tx.props.tucss, sizeof(uint8_t), 1); // Not in vmsd
+    randomize_nbytes(&s->tx.props.tucso, sizeof(uint8_t), 1); // Not in vmsd
+    randomize_nbytes(&s->tx.props.tucse, sizeof(uint16_t), 1); // Not in vmsd
+    randomize_nbytes(&s->tx.props.paylen, sizeof(uint32_t), 1); // Not in vmsd
+    randomize_nbytes(&s->tx.props.hdr_len, sizeof(uint8_t), 1); // Not in vmsd
+    randomize_nbytes(&s->tx.props.mss, sizeof(uint16_t), 1); // Not in vmsd
+    randomize_nbytes(&s->tx.props.ip, sizeof(int8_t), 1); // Not in vmsd
+    randomize_nbytes(&s->tx.props.tcp, sizeof(int8_t), 1); // Not in vmsd
+    randomize_nbytes(&s->tx.cptse, sizeof(bool), 1); // Not in vmsd
+    randomize_nbytes(&s->tx.busy, sizeof(bool), 1); // Not in vmsd
 
     randomize_nbytes(s->phy_reg, sizeof(uint16_t), 0x20);
     randomize_nbytes(s->eeprom_data, sizeof(uint16_t), 64);
     randomize_nbytes(s->mac_reg, sizeof(uint32_t), 0x8000);
-
+ 
+    // randomize_nbytes(s->autoneg_timer, sizeof(QEMUTimer), 1); // Not in vmsd // (BREAKS)?
+    // randomize_nbytes(s->mit_timer, sizeof(QEMUTimer), 1); // Not in vmsd // (BREAKS)?
+    randomize_nbytes(&s->mit_timer_on, sizeof(bool), 1); // Not in vmsd
     randomize_nbytes(&s->mit_irq_level, sizeof(bool), 1);
+    randomize_nbytes(&s->mit_ide, sizeof(uint32_t), 1); // Not in vmsd
+    randomize_nbytes(&s->mit_ide, sizeof(uint32_t), 1); // Not in vmsd
+    // randomize_nbytes(s->flush_queue_timer, sizeof(QEMUTimer), 1); // Not in vmsd // (BREAKS)?
+
+    randomize_nbytes(&s->compat_flags, sizeof(uint32_t), 1); // Not in vmsd
+    randomize_nbytes(&s->received_tx_tso, sizeof(bool), 1); // Not in vmsd
+    randomize_nbytes(&s->use_tso_for_migration, sizeof(bool), 1); // Not in vmsd
 
     return 0;
 }
