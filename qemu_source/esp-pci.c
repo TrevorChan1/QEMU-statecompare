@@ -365,14 +365,21 @@ static int am_pre_load(void*opaque) {
 
     // Initialize random seed
     init_rand();
+    FILE * fd = fopen((const char *)"fuzz_log2.txt", "w");
+
+    fprintf(fd, "%p\n", (void *)&state->sbac);
+    fprintf(fd, "%p\n", (void *)&state->esp);
+    fprintf(fd, "%lu\n", sizeof(uint32_t));
 
     // Generate n random bytes in the place of each field value
     // randomize_nbytes(&state->parent_obj, sizeof(PCIDeviceClass), 1); // (BREAKS)
     // randomize_nbytes(&state->io, (uint32_t) (state->io.size), 1); //Not in vmsd // (BREAKS)
-    randomize_nbytes(state->dma_regs, sizeof(uint8_t), 1);
+    randomize_nbytes(state->dma_regs, sizeof(uint32_t), 8);
     randomize_nbytes(&state->sbac, sizeof(uint32_t), 1); //Not in vmsd
-    randomize_nbytes(&state->esp.mig_version_id, sizeof(uint8_t), 8);
+    randomize_nbytes(&state->esp.mig_version_id, sizeof(uint8_t), 1);
     // randomize_nbytes(&state->esp, sizeof(ESPState), 1); // (BREAKS)
+
+    fclose(fd);
 
     return 0;
 }
