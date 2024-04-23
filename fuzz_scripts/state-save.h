@@ -7,6 +7,7 @@
 #include "chardev/char-fe.h"
 #include "net/net.h"
 #include "hw/net/mii.h"
+#include <time.h>
 
 #define MAX_NAME_LEN 16
 
@@ -28,3 +29,7 @@ FILE ** vmstate_init_statefile(char * filename, int num_fields);
 
 int vmstate_save_field(FILE * metadata_fp, FILE * data_fp, int offset, 
                         int element_size, int n, char * name, void * values);
+
+void randomize_nbytes(void * field, size_t n, int num_fields);
+void init_rand(void);
+

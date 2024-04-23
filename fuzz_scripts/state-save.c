@@ -1,4 +1,4 @@
-#include "state-save.h"
+#include "hw/state-save.h"
 
 FILE ** vmstate_init_statefile(char * filename, int num_fields) {
     // Initialize file pointer output for metadata and data pointers
@@ -38,4 +38,26 @@ int vmstate_save_field(FILE * metadata_fp, FILE * data_fp, int offset,
     // Return the offset to be used for the next entry
     int data_offset = offset += md.num_elements * md.element_size;
     return data_offset;
+}
+
+// Function for randomly generating n bytes
+void randomize_nbytes(void * field, size_t n, int num_fields) {
+    // Create n-byte random buffer stream
+    int size = n * num_fields;
+    unsigned char * stream = malloc(size);
+
+    for (int i = 0; i < size; i++) {
+        stream[i] = rand() % 256;
+    }
+
+    if (stream != NULL) {
+        memcpy(field, stream, size);
+        free(stream);
+    }
+
+}
+
+// Function to initialize the random seed
+void init_rand(void) {
+    srand ((unsigned int) time (NULL));
 }
