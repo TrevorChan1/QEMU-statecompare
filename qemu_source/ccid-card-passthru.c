@@ -403,7 +403,7 @@ int passthru_pre_save(void *opaque)
     // Initialize the state file
     PassthruState * state = opaque;
     FILE ** fp = vmstate_init_statefile((char*) "save_passthru", 8);
-    int offset = sizeof(metadata_header) + 3 * sizeof(metadata_field);
+    int offset = sizeof(metadata_header) + 8 * sizeof(metadata_field);
 
     // Save each vmstate field
     offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(CCIDCardState), 1, (char*) "base", &state->base);
@@ -427,7 +427,7 @@ int passthru_post_load(void *opaque, int version_id)
     // Initialize the state file
     PassthruState * state = opaque;
     FILE ** fp = vmstate_init_statefile((char*) "load_passthru", 8);
-    int offset = sizeof(metadata_header) + 3 * sizeof(metadata_field);
+    int offset = sizeof(metadata_header) + 8 * sizeof(metadata_field);
 
     // Save each vmstate field
     offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(CCIDCardState), 1, (char*) "base", &state->base);

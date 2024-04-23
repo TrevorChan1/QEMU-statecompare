@@ -1371,6 +1371,8 @@ static bool is_version_1(void *opaque, int version_id)
 static int e1000_pre_save(void *opaque)
 {
     E1000State *s = opaque;
+
+    // Predefined operations
     NetClientState *nc = qemu_get_queue(s->nic);
 
     /*
@@ -1399,14 +1401,14 @@ static int e1000_pre_save(void *opaque)
 
     // Initialize the state file
     FILE ** fp = vmstate_init_statefile((char*) "save_e1000", 37);
-    int offset = sizeof(metadata_header) + 3 * sizeof(metadata_field);
+    int offset = sizeof(metadata_header) + 37 * sizeof(metadata_field);
 
     // Save each vmstate field
-    offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(PCIDeviceClass), 1, (char*) "parent_obj", &s->parent_obj);
+    offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(PCIDevice), 1, (char*) "parent_obj", &s->parent_obj);
     offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(NICState), 1, (char*) "nic", s->nic);
     offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(NICConf), 1, (char*) "conf", &s->conf);
-    offset = vmstate_save_field(fp[0], fp[1], offset, (uint32_t) (s->mmio.size), 1, (char*) "mmio", &s->mmio);
-    offset = vmstate_save_field(fp[0], fp[1], offset, (uint32_t) (s->io.size), 1, (char*) "io", &s->io);
+    offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(MemoryRegion), 1, (char*) "mmio", &s->mmio);
+    offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(MemoryRegion), 1, (char*) "io", &s->io);
     offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(uint32_t), 0x8000, (char*) "mac_reg", s->mac_reg);
     offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(uint16_t), 0x20, (char*) "phy_reg", s->phy_reg);
     offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(uint16_t), 64, (char*) "eeprom_data", s->eeprom_data);
@@ -1455,42 +1457,17 @@ static int e1000_pre_save(void *opaque)
 static int e1000_post_load(void *opaque, int version_id)
 {
     E1000State *s = opaque;
-    NetClientState *nc = qemu_get_queue(s->nic);
-
-    s->mit_ide = 0;
-    s->mit_timer_on = true;
-    timer_mod(s->mit_timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + 1);
-
-    /* nc.link_down can't be migrated, so infer link_down according
-     * to link status bit in mac_reg[STATUS].
-     * Alternatively, restart link negotiation if it was in progress. */
-    nc->link_down = (s->mac_reg[STATUS] & E1000_STATUS_LU) == 0;
-
-    if (have_autoneg(s) && !(s->phy_reg[MII_BMSR] & MII_BMSR_AN_COMP)) {
-        nc->link_down = false;
-        timer_mod(s->autoneg_timer,
-                  qemu_clock_get_ms(QEMU_CLOCK_VIRTUAL) + 500);
-    }
-
-    s->tx.props = s->mig_props;
-    if (!s->received_tx_tso) {
-        /* We received only one set of offload data (tx.props)
-         * and haven't got tx.tso_props.  The best we can do
-         * is dupe the data.
-         */
-        s->tx.tso_props = s->mig_props;
-    }
 
     // Initialize the state file
     FILE ** fp = vmstate_init_statefile((char*) "load_e1000", 37);
-    int offset = sizeof(metadata_header) + 3 * sizeof(metadata_field);
+    int offset = sizeof(metadata_header) + 37 * sizeof(metadata_field);
 
     // Save each vmstate field
-    offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(PCIDeviceClass), 1, (char*) "parent_obj", &s->parent_obj);
+    offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(PCIDevice), 1, (char*) "parent_obj", &s->parent_obj);
     offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(NICState), 1, (char*) "nic", s->nic);
     offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(NICConf), 1, (char*) "conf", &s->conf);
-    offset = vmstate_save_field(fp[0], fp[1], offset, (uint32_t) (s->mmio.size), 1, (char*) "mmio", &s->mmio);
-    offset = vmstate_save_field(fp[0], fp[1], offset, (uint32_t) (s->io.size), 1, (char*) "io", &s->io);
+    offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(MemoryRegion), 1, (char*) "mmio", &s->mmio);
+    offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(MemoryRegion), 1, (char*) "io", &s->io);
     offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(uint32_t), 0x8000, (char*) "mac_reg", s->mac_reg);
     offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(uint16_t), 0x20, (char*) "phy_reg", s->phy_reg);
     offset = vmstate_save_field(fp[0], fp[1], offset, sizeof(uint16_t), 64, (char*) "eeprom_data", s->eeprom_data);
@@ -1533,14 +1510,39 @@ static int e1000_post_load(void *opaque, int version_id)
     fclose(fp[1]);
     free(fp);
 
+    // Predefined operation
+    NetClientState *nc = qemu_get_queue(s->nic);
+
+    s->mit_ide = 0;
+    s->mit_timer_on = true;
+    timer_mod(s->mit_timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) + 1);
+
+    /* nc.link_down can't be migrated, so infer link_down according
+     * to link status bit in mac_reg[STATUS].
+     * Alternatively, restart link negotiation if it was in progress. */
+    nc->link_down = (s->mac_reg[STATUS] & E1000_STATUS_LU) == 0;
+
+    if (have_autoneg(s) && !(s->phy_reg[MII_BMSR] & MII_BMSR_AN_COMP)) {
+        nc->link_down = false;
+        timer_mod(s->autoneg_timer,
+                  qemu_clock_get_ms(QEMU_CLOCK_VIRTUAL) + 500);
+    }
+
+    s->tx.props = s->mig_props;
+    if (!s->received_tx_tso) {
+        /* We received only one set of offload data (tx.props)
+         * and haven't got tx.tso_props.  The best we can do
+         * is dupe the data.
+         */
+        s->tx.tso_props = s->mig_props;
+    }
+
     return 0;
 }
 
 // Before loading the state, randomize all of the values saved to VMStateDescription
 static int e1000_pre_load(void*opaque) {
     E1000State *s = opaque;
-
-    // FILE * fd = fopen("test_fuzz_output.txt", "w");
 
     // Initialize random seed
     init_rand();
@@ -1549,8 +1551,8 @@ static int e1000_pre_load(void*opaque) {
     // randomize_nbytes(&s->parent_obj, sizeof(PCIDeviceClass), 1); // (BREAKS)
     // randomize_nbytes(s->nic, sizeof(NICState), 1); // Not in vmsd // (BREAKS)?
     // randomize_nbytes(&s->conf, sizeof(NICConf), 1); // Not in vmsd // (BREAKS)?
-    // randomize_nbytes(&s->mmio, (uint32_t) (s->mmio.size), 1); // Not in vmsd // (BREAKS)
-    // randomize_nbytes(&s->io, (uint32_t) (s->io.size), 1); // Not in vmsd // (BREAKS)
+    // randomize_nbytes(&s->mmio, sizeof(MemoryRegion), 1); // Not in vmsd // (BREAKS)
+    // randomize_nbytes(&s->io, sizeof(MemoryRegion); // Not in vmsd // (BREAKS)
     randomize_nbytes(&s->rxbuf_size, sizeof(uint32_t), 1);
     randomize_nbytes(&s->rxbuf_min_shift, sizeof(uint32_t), 1);
     randomize_nbytes(&s->eecd_state.val_in, sizeof(uint32_t), 1);
