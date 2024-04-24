@@ -14,7 +14,56 @@ The project also includes a script dedicated to automatically generating the cha
 The following is instructions on how to replicate the setup used throughout the project.
 
 ### Create a QEMU Ubuntu x86_64 Virtual Machine
+Documentation on how to install QEMU dependencies needed for creating a QEMU VM can be found on the [QEMU GitHub page](https://github.com/qemu/qemu?tab=readme-ov-file) and [here](https://wiki.qemu.org/Hosts/Linux)
+
+For setting up an Ubuntu VM, you will also need to install an Ubuntu iso file (throughout the project I used Ubuntu [Desktop 20.04](https://releases.ubuntu.com/focal/), but [Tiny Core Linux](http://tinycorelinux.net/) might also work).
+
+```
+// Create a qcow2 QEMU image file
+qemu-img create -f qcow2 test_vm.qcow2 16G
+
+// Boot up VM with the installed iso file
+qemu-system-x86_64 -m 1024 -enable-kvm \
+-drive if=virtio,file=test_vm.qcow2,cache=none \
+-cdrom ubuntu-20.04.6-desktop-amd64.iso
+
+// Go through setup process for Ubuntu OS
+```
 
 ### Install QEMU and Modify Build Process to Include Function Files
 
+
+Files to replace:
+- /path/to/qemu/meson.build: [qemu_source/meson.build](https://github.com/TrevorChan1/QEMU-statecompare/blob/main/qemu_source/meson.build)
+- /path/to/qemu/hw/net/e1000.c: [qemu_source/e1000.c](https://github.com/TrevorChan1/QEMU-statecompare/blob/main/qemu_source/e1000.c)
+- /path/to/qemu/hw/usb/ccid-card-passthru.c: [qemu_source/ccid-card-passthru.c](https://github.com/TrevorChan1/QEMU-statecompare/blob/main/qemu_source/ccid-card-passthru.c)
+- /path/to/qemu/hw/scsi/esp-pci.c: [qemu_source/esp-pci.c](https://github.com/TrevorChan1/QEMU-statecompare/blob/main/qemu_source/esp-pci.c)
+- Add [fuzz_scripts/state-save.c](https://github.com/TrevorChan1/QEMU-statecompare/blob/main/fuzz_scripts/state-save.c) and [fuzz_scripts/state-save.h](https://github.com/TrevorChan1/QEMU-statecompare/blob/main/fuzz_scripts/state-save.h) to /path/to/qemu/hw directory
+
+These changes swap out the current source code for the 3 virtual devices with the updated version created that saves virtual device state information. Swapping out the meson.build file tells the build / configuration step to build QEMU with the functions created for saving and randomizing state field information.
+
+```
+// Build QEMU with the updated source files
+cd /path/to/QEMU
+./configure --enable-sdl --enable-smartcard --extra-cflags="-g" --target-list=x86_64-softmmu
+make
+// This will build the qemu-system-x86_64 executable with the modified files and functions
+// (located in qemu/build/x86_64-softmmu directory)
+```
+
 ### Run VM and Fuzz Script
+The following are the commands I used when testing for running the QEMU VM and running the fuzz script
+```
+cd /path/to/qemu
+
+// Compile fuzzing script to an executable
+gcc /path/to/QEMU-statecompare/fuzz_scripts/trev_monitor.c -o fuzz_qemu
+
+// Run QEMU with necessary attached devices and monitor on a socket
+./build/x86_64-softmmu/qemu-system-x86_64 -hda ./trevor_test.img -m 6G -smp cores=6 -display sdl -chardev socket,server=on,host=0.0.0.0,port=2001,id=ccid,wait=off -usb -device usb-ccid -device ccid-card-passthru,chardev=ccid -device am53c974,id=scsi0 -monitor unix:/tmp/qemu-monitor.sock,server,nowait
+
+// Run fuzz script (takes text file with list of devices to check comparison for)
+./fuzz_qemu /path/to/QEMU-statecompare/fuzz_scripts/device_inputs.txt
+
+// Output will be written to /path/to/qemu/fuzz_log.txt
+```
