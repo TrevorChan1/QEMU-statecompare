@@ -31,7 +31,13 @@ qemu-system-x86_64 -m 1024 -enable-kvm \
 ```
 
 ### Install QEMU and Modify Build Process to Include Function Files
-
+Install QEMU source code and dependencies (instructions from [QEMU docs](https://www.qemu.org/download/))
+```
+git clone https://gitlab.com/qemu-project/qemu.git
+cd qemu
+git submodule init
+git submodule update --recursive
+```
 
 Files to replace:
 - /path/to/qemu/meson.build: [qemu_source/meson.build](https://github.com/TrevorChan1/QEMU-statecompare/blob/main/qemu_source/meson.build)
