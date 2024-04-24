@@ -73,3 +73,13 @@ gcc /path/to/QEMU-statecompare/fuzz_scripts/trev_monitor.c -o fuzz_qemu
 
 // Output will be written to /path/to/qemu/fuzz_log.txt
 ```
+
+## Helpful Documentation
+If you're just getting started with QEMU, here are a few helpful links:
+- [Some QEMU Monitor Commands / What They Do](https://documentation.suse.com/sles/12-SP5/html/SLES-all/cha-qemu-monitor.html)
+- [QEMU docs](https://www.qemu.org/docs/master/)
+
+Links to documentation taken throughout the project:
+- [Project Slides](https://docs.google.com/presentation/d/1ONY96otzQZbfdQANVCA5XiQ0zecyeaLlhc2oCVPhYOk/edit?usp=sharing)
+- [Research Meeting Slides (Semester 1)](https://docs.google.com/presentation/d/1jWS7LRfkL5en3372e3Hz1UfiRr0y-4LzB7-fmOE3cJw/edit?usp=sharing)
+- [Research Meeting Slides (Semester 2)](https://docs.google.com/presentation/d/1reZlJbfQNC0PkxTkyhTP5MWmyd3PvYjvU0L46mllY5Q/edit?usp=sharing)
